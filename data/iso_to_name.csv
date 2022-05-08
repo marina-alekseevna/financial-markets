@@ -4,9 +4,9 @@ BDS,Barbados
 BRU,Brunei
 CDN,Canada
 EAK,Kenya
-EAT,"Tanganyika [Part of Tanzania, United Republic of]"
+EAT,Tanganyika
 EAU,Uganda
-EAZ,"Zanzibar [Part of Tanzania, United Republic of]"
+EAZ,Zanzibar
 GBA,Alderney
 GBG,Guernsey
 GBJ,Jersey
@@ -16,20 +16,20 @@ GCA,Guatemala
 HKJ,Jordan
 MAL,Malaysia
 RCA,Central African Republic
-RCB,"Congo, People's Republic of"
+RCB,Congo
 RCH,Chile
 RMM,Mali
 RNR,Zambia
-ROK,"Korea, Republic of"
+ROK,Korea
 RSM,San Marino
-RSR,Southern Rhodesia [now Zimbabwe]
+RSR,Zimbabwe
 SLO,Slovenia
 SME,Suriname
 TMN,Turkmenistan
 WAG,Gambia
 WAL,Sierra Leone
 WAN,Nigeria
-ZRE,"Zaire, People's Republic of"
+ZRE,Zaire
 ABW,Aruba
 AFG,Afghanistan
 AGO,Angola
@@ -57,11 +57,11 @@ BGR,Bulgaria
 BHR,Bahrain
 BHS,Bahamas
 BIH,Bosnia and Herzegovina
-BLM,Saint Barth‚lemy
+BLM,Saint Barthalemy
 BLR,Belarus
 BLZ,Belize
 BMU,Bermuda
-BOL,Bolivia (Plurinational State of)
+BOL,Bolivia
 BRA,Brazil
 BRB,Barbados
 BRN,Brunei Darussalam
@@ -74,9 +74,9 @@ CCK,Cocos (Keeling) Islands
 CHE,Switzerland
 CHL,Chile
 CHN,China
-CIV,C“te d'Ivoire
+CIV,Cote d'Ivoire
 CMR,Cameroon
-COD,"Congo, Democratic Republic of the"
+COD,DRC
 COG,Congo
 COK,Cook Islands
 COL,Colombia
@@ -84,7 +84,7 @@ COM,Comoros
 CPV,Cabo Verde
 CRI,Costa Rica
 CUB,Cuba
-CUW,Cura‡ao
+CUW,Curaï¿½ao
 CXR,Christmas Island
 CYM,Cayman Islands
 CYP,Cyprus
@@ -109,7 +109,7 @@ FRA,France
 FRO,Faroe Islands
 FSM,Micronesia (Federated States of)
 GAB,Gabon
-GBR,United Kingdom of Great Britain and Northern Ireland
+GBR,UK
 GEO,Georgia
 GGY,Guernsey
 GHA,Ghana
@@ -137,7 +137,7 @@ IMN,Isle of Man
 IND,India
 IOT,British Indian Ocean Territory
 IRL,Ireland
-IRN,Iran (Islamic Republic of)
+IRN,Iran
 IRQ,Iraq
 ISL,Iceland
 ISR,Israel
@@ -217,7 +217,7 @@ PRY,Paraguay
 PSE,"Palestine, State of"
 PYF,French Polynesia
 QAT,Qatar
-REU,R‚union
+REU,Reunion
 ROU,Romania
 RUS,Russian Federation
 RWA,Rwanda
@@ -264,7 +264,7 @@ UGA,Uganda
 UKR,Ukraine
 UMI,United States Minor Outlying Islands
 URY,Uruguay
-USA,United States of America
+USA,USA
 UZB,Uzbekistan
 VAT,Holy See
 VCT,Saint Vincent and the Grenadines

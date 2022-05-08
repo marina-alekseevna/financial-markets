@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import streamlit as st 
 
 def reformatEU(target_df: pd.DataFrame, 
                eurozone_countries: str) -> pd.DataFrame:
@@ -64,7 +65,8 @@ def getInterestRates(cutoff_date: str,
     
     
     return target_df
-    
+
+@st.cache(suppress_st_warning=True)   
 def formatIRData(cutoff_date: str, 
                  ir_path: str, 
                  iso_conversions: str, 

@@ -3,14 +3,14 @@ import pandas as pd
 
 
 
-def getChoropleth(df: pd.DataFrame, 
+def makeChoropleth(df: pd.DataFrame, 
                   min_val: float, 
                   max_val: float, 
                   target_indicator: str, 
                   colorscale: str, 
                   colorbar_title: str, 
                   title: str, 
-                  source: str) -> plotly.graph_objs._figure.Figure:
+                  source: str) -> go.Figure:
     '''
         Return stylised plotly graph object choropleth
         
@@ -49,7 +49,7 @@ def getChoropleth(df: pd.DataFrame,
 
         title={
             'text': title,
-            'y':0.9,
+            'y':0.85,
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top',
@@ -58,18 +58,18 @@ def getChoropleth(df: pd.DataFrame,
         title_font_size=26,
         font=dict(
             family="Sans-Serif", 
-            size=18, 
+            size=12, 
             color='#525252'
         ),
 
 
         annotations = [dict(
             x=0,
-            y=-0.1,
+            y=-0.05,
             xref='paper',
             yref='paper',
             text=source,
-            showarrow = False
+            showarrow = False,
         )]
     )
 

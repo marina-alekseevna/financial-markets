@@ -12,7 +12,8 @@ def reformatEU(target_df: pd.DataFrame,
     Returns:
         pandas.DataFrame: expanded version of the initial target_df
     '''
-    eurozone_index = pd.read_csv(eurozone_countries)
+    eurozone_index = pd.read_csv(eurozone_countries, parse_dates=["Adoption"])
+    eurozone_index = eurozone_index[eurozone_index.Adoption <= target_df.loc[0].date]
     for country in tuple(eurozone_index.ISO2):
         target_df[country] = target_df["XM"]
     
@@ -50,7 +51,7 @@ def getInterestRates(cutoff_date: str,
         iso_to_country_name (str): path to the file with ISO-3 to name conversions
         eu_countries (str): path to the file with 
     Returns:
-        pandas.DataFrame: dataframe with columns "date", "ISO3", "name", "ir"
+        pandas.DataFrame: dataframe with columns "date", "ISO3", "name", "interest rate"
     
     '''
     df = pd.read_csv(ir_path)
@@ -79,14 +80,16 @@ def formatIRData(cutoff_date: str,
         iso_to_country_name (str): path to the file with ISO-3 to name conversions
         eurozone_countries (str): path to the file with 
     Returns:
-        pandas.DataFrame: dataframe with columns "date", "ISO3", "name", "ir"
+        pandas.DataFrame: dataframe with columns "date", "ISO3", "name", "interest rate", "text
     '''
     
     target_df = getInterestRates(cutoff_date, ir_path, iso_conversions, iso_to_country_name)
     
     target_df = reformatEU(target_df, eurozone_countries)
     
-    target_df = pd.melt(target_df, id_vars=["date"], var_name="ISO3", value_name="ir")
+    target_df = pd.melt(target_df, id_vars=["date"], var_name="ISO3", value_name="interest rate")
     target_df = reassignISO2toISO3(target_df, iso_conversions)
     target_df = target_df.merge(pd.read_csv(iso_to_country_name, encoding='latin1'))
-    return target_df[["date", "ISO3", "name", "ir"]]
+    target_df["text"] = target_df.apply(lambda row: f"{row['name']}<br>{row['interest rate']}%", axis=1)
+
+    return target_df[["date", "ISO3", "name", "interest rate", "text"]]

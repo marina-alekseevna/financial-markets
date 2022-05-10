@@ -95,3 +95,29 @@ def formatIRData(cutoff_date: str,
     target_df["text"] = target_df.apply(lambda row: f"{row['name']}<br>{row['interest rate']}%", axis=1)
 
     return target_df[["date", "ISO3", "name", "interest rate", "text"]]
+
+@st.cache(suppress_st_warning=True)   
+def getMonthly(df: pd.DataFrame, indicator: str, 
+               eurozone_countries: str,
+               iso_conversions: str, 
+               date_range:tuple[str, str]=('1999-01', '2022-03')) -> pd.DataFrame:
+    '''
+    Reformat data for monthly visualisations
+    
+    Args: 
+        df (pd.DataFrame):
+        iso_conversions (str):
+        eurozone_countries (str):
+        date_range (tuple[str, str]):
+    Returns:
+        pd.DataFrame: formatted long dataframe
+    '''
+    df["Reference area"] = df["Reference area"].str[:2]
+    countries = list(df["Reference area"])
+    df = df[df.columns[list(df.columns).index(date_range[0]): list(df.columns).index(date_range[1])+1]].T
+    df.columns = countries
+    df = df.reset_index()
+    df = df.rename(columns={"XM":"EURO", "index":"date"})
+    df = reassignISO2toISO3(df, iso_conversions, False)
+    
+    return df

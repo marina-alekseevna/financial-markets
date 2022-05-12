@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import streamlit as st 
 
 def reformatEU(target_df: pd.DataFrame, 
                eurozone_countries: str) -> pd.DataFrame:
@@ -64,7 +65,8 @@ def getInterestRates(cutoff_date: str,
     
     
     return target_df
-    
+
+@st.cache(suppress_st_warning=True)   
 def formatIRData(cutoff_date: str, 
                  ir_path: str, 
                  iso_conversions: str, 
@@ -93,3 +95,128 @@ def formatIRData(cutoff_date: str,
     target_df["text"] = target_df.apply(lambda row: f"{row['name']}<br>{row['interest rate']}%", axis=1)
 
     return target_df[["date", "ISO3", "name", "interest rate", "text"]]
+
+@st.cache(suppress_st_warning=True)   
+def getMonthly(df: pd.DataFrame, indicator: str, 
+               eurozone_countries: str,
+               iso_conversions: str, 
+               date_range:tuple[str, str]=('1999-01', '2022-03')) -> pd.DataFrame:
+    '''
+    Reformat data for monthly visualisations
+    
+    Args: 
+        df (pd.DataFrame):
+        iso_conversions (str):
+        eurozone_countries (str):
+        date_range (tuple[str, str]):
+    Returns:
+        pd.DataFrame: formatted long dataframe
+    '''
+    df["Reference area"] = df["Reference area"].str[:2]
+    countries = list(df["Reference area"])
+    df = df[df.columns[list(df.columns).index(date_range[0]): list(df.columns).index(date_range[1])+1]].T
+    df.columns = countries
+    df = df.reset_index()
+    df = df.rename(columns={"XM":"EURO", "index":"date"})
+    df = reassignISO2toISO3(df, iso_conversions, False)
+    
+    return df
+
+    def getMonthly(df: pd.DataFrame, indicator: str, 
+               iso_conversions: str, 
+               date_range: tuple[str, str]=('1999-01', '2022-03'),
+               interpolate: bool=True) -> pd.DataFrame:
+    '''
+    Reformat data for monthly visualisations
+    
+    Args: 
+        df (pd.DataFrame): original dataframe
+        iso_conversions (str): conversions for ISO2 to ISO3 conversions
+        date_range (tuple[str, str]):
+        interpolate (bool): choose whether to linearly interpolate data for countries that have not posted it yet
+    Returns:
+        pd.DataFrame: formatted long dataframe
+    '''
+    df["Reference area"] = df["Reference area"].str[:2]
+    countries = list(df["Reference area"])
+    df = df[df.columns[list(df.columns).index(date_range[0]): list(df.columns).index(date_range[1])+1]].T
+    df.columns = countries
+    df = df.reset_index()
+    df = df.rename(columns={"index":"date"})
+#     df = reassignISO2toISO3(df, iso_conversions, False)
+    
+    return df.rename(columns = iso_conversions)
+# df.melt(id_vars="date", value_vars=df.columns[1:], var_name="country", value_name=indicator)
+def splitDate(df: pd.DataFrame):
+    df[["year", "month"]] = df['date'].str.split('-', 1, expand=True)
+    df["year"] = df["year"].astype("int")
+    df["month"] = df["month"].astype("int")
+    
+    return df[["year", "month", *df.columns[1:-2]]]
+
+def expandCPIInterestRates(cpi_df: pd.DataFrame, ir_df: pd.DataFrame, eu_join: dict) -> pd.DataFrame:
+    '''
+    Combines CPI and Interest Rates data by BIS.org, expanding Eurozone interest rate to all Eurozone countries
+    
+    Args:
+        cpi_df (pd.DataFrame): dataframe containing monthly CPI data by BIS.org
+        cpi_df (pd.DataFrame): dataframe containing monthly CPI data by BIS.org
+        eu_join (dict): a dictionary of Eurozone countries with years of entering
+    Returns:
+        combined and expanded pd.DataFrame  
+    '''
+    cpi_df = splitDate(cpi_df)
+    ir_df = splitDate(ir_df)
+#     df = cpi_df.merge(ir_df, how="left")
+    df = cpi_df.merge(ir_df, how="left")
+    
+    dfs = []
+    for i in eu_join:
+        dfs.append(pd.DataFrame({
+                    "year" : df[(df.ISO3 == i) & (df.year >= eu_join[i])].year.values, 
+                    "month": df[(df.ISO3 == i) & (df.year >= eu_join[i])].month.values, 
+                    "ISO3" : df[(df.ISO3 == i) & (df.year >= eu_join[i])].ISO3.values,
+                    "CPI"  : df[(df.ISO3 == i) & (df.year >= eu_join[i])].CPI.values,
+                    "InterestRate": df[(df.ISO3 == "XM") & (df.year >= eu_join[i])].InterestRate.values}))
+    df = ir_df.merge(cpi_df, how="left")
+    
+    return pd.concat([df, *dfs])
+
+def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
+                                iso_conversions_path: str,
+                                eurozone_path: str,
+                                cutoff_date: str = "1999-01-01",
+                                interpolate:bool = True) -> pd.DataFrame:
+    '''
+    Prepare data from BIS.org for further analysis and visualisation
+    
+    Args:
+        cpi_path (str):path to monthly CPI from BIS.org
+        ir_path (str): path to monthly interest rates from BIS.org
+        cutoff_date (str): cutoff date for data set as default to "1999-01-01"
+        iso_conversions_path (str): path to the file containing ISO conversions
+        eurozone_path (str): path to the file containing Eurozone countries and euro adoption dates
+    
+    Returns:
+        pd.DataFrame:
+    '''
+    cpi_df = pd.read_csv(cpi_path)
+    ir_df = pd.read_csv(ir_path)
+    cpi_df = cpi_df[((cpi_df["Unit of measure"]=="771:Year-on-year changes, in per cent") 
+              & (cpi_df["Frequency"] == "M:Monthly"))].reset_index(drop=True)
+    
+    iso_conversions = pd.read_csv(iso_conversions_path)
+    iso_conversions_dict = dict(zip(iso_conversions.ISO2, iso_conversions.ISO3))
+    name_conversions_dict = dict(zip(iso_conversions.ISO3, iso_conversions.name))
+    
+    cpi_df = getMonthly(cpi_df, "CPI", iso_conversions=iso_conversions_dict)
+    ir_df = getMonthly(ir_df, "interest rate", iso_conversions=iso_conversions_dict)
+    
+    ir_df = ir_df.melt(id_vars="date", value_vars=ir_df.columns[1:], var_name="ISO3", value_name="InterestRate")
+    cpi_df = cpi_df.melt(id_vars="date", value_vars=cpi_df.columns[1:], var_name="ISO3", value_name="CPI")
+    
+    eu_index = pd.read_csv(eurozone_path, parse_dates = ["Adoption"])
+    eu_join=dict(zip(eu_index.ISO3, eu_index.Adoption.dt.year))
+    df = expandCPIInterestRates(cpi_df, ir_df, eu_join)
+    
+    return df

@@ -96,33 +96,9 @@ def formatIRData(cutoff_date: str,
 
     return target_df[["date", "ISO3", "name", "interest rate", "text"]]
 
-@st.cache(suppress_st_warning=True)   
-def getMonthly(df: pd.DataFrame, indicator: str, 
-               eurozone_countries: str,
-               iso_conversions: str, 
-               date_range:tuple[str, str]=('1999-01', '2022-03')) -> pd.DataFrame:
-    '''
-    Reformat data for monthly visualisations
-    
-    Args: 
-        df (pd.DataFrame):
-        iso_conversions (str):
-        eurozone_countries (str):
-        date_range (tuple[str, str]):
-    Returns:
-        pd.DataFrame: formatted long dataframe
-    '''
-    df["Reference area"] = df["Reference area"].str[:2]
-    countries = list(df["Reference area"])
-    df = df[df.columns[list(df.columns).index(date_range[0]): list(df.columns).index(date_range[1])+1]].T
-    df.columns = countries
-    df = df.reset_index()
-    df = df.rename(columns={"XM":"EURO", "index":"date"})
-    df = reassignISO2toISO3(df, iso_conversions, False)
-    
-    return df
 
-    def getMonthly(df: pd.DataFrame, indicator: str, 
+@st.cache(suppress_st_warning=True)
+def getMonthly(df: pd.DataFrame, indicator: str, 
                iso_conversions: str, 
                date_range: tuple[str, str]=('1999-01', '2022-03'),
                interpolate: bool=True) -> pd.DataFrame:
@@ -219,7 +195,6 @@ def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
     
     iso_conversions = pd.read_csv(iso_conversions_path)
     iso_conversions_dict = dict(zip(iso_conversions.ISO2, iso_conversions.ISO3))
-    name_conversions_dict = dict(zip(iso_conversions.ISO3, iso_conversions.name))
     
     cpi_df = getMonthly(cpi_df, "CPI", iso_conversions=iso_conversions_dict)
     ir_df = getMonthly(ir_df, "interest rate", iso_conversions=iso_conversions_dict)
@@ -231,4 +206,4 @@ def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
     eu_join=dict(zip(eu_index.ISO3, eu_index.Adoption.dt.year))
     df = expandCPIInterestRates(cpi_df, ir_df, eu_join)
     
-    return df
+    return df.merge(iso_conversions[["ISO3", "name"]])

@@ -133,7 +133,8 @@ def getMonthly(df: pd.DataFrame, indicator: str,
         df (pd.DataFrame): original dataframe
         iso_conversions (str): conversions for ISO2 to ISO3 conversions
         date_range (tuple[str, str]):
-        interpolate (bool): choose whether to linearly interpolate data for countries that have not posted it yet
+        interpolate (bool): choose whether to linearly interpolate data for 
+        countries that have not posted it yet, set to False by default
     Returns:
         pd.DataFrame: formatted long dataframe
     '''
@@ -143,11 +144,23 @@ def getMonthly(df: pd.DataFrame, indicator: str,
     df.columns = countries
     df = df.reset_index()
     df = df.rename(columns={"index":"date"})
-#     df = reassignISO2toISO3(df, iso_conversions, False)
     
-    return df.rename(columns = iso_conversions)
-# df.melt(id_vars="date", value_vars=df.columns[1:], var_name="country", value_name=indicator)
+    df = df.rename(columns = iso_conversions)
+    
+    if interpolate:
+        return df.interpolate(method='linear', axis=1)
+    else:
+        return df
+
 def splitDate(df: pd.DataFrame):
+    '''
+    Split data into month and year, converting them to int
+    
+    Args:
+        df (pd.DataFrame): the dataframe that gets changed
+    Returns:
+        pd.DataFrame the edited dataframe
+    '''
     df[["year", "month"]] = df['date'].str.split('-', 1, expand=True)
     df["year"] = df["year"].astype("int")
     df["month"] = df["month"].astype("int")
@@ -167,7 +180,6 @@ def expandCPIInterestRates(cpi_df: pd.DataFrame, ir_df: pd.DataFrame, eu_join: d
     '''
     cpi_df = splitDate(cpi_df)
     ir_df = splitDate(ir_df)
-#     df = cpi_df.merge(ir_df, how="left")
     df = cpi_df.merge(ir_df, how="left")
     
     dfs = []

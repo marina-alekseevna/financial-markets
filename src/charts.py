@@ -28,7 +28,7 @@ def makeChoropleth(df: pd.DataFrame,
     '''
     fig = go.Figure(data=go.Choropleth(
         locations=df['ISO3'],
-        z=df['interest rate'].astype(float),
+        z=df[target_indicator].astype(float),
         zmin=min_val,
         zmax=max_val,
         colorscale= colorscale,

@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 import streamlit as st 
-
+from typing import Tuple, List, Union
 def reformatEU(target_df: pd.DataFrame, 
                eurozone_countries: str) -> pd.DataFrame:
     '''
@@ -173,7 +173,6 @@ def expandCPIInterestRates(cpi_df: pd.DataFrame, ir_df: pd.DataFrame, eu_join: d
 def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
                                 iso_conversions_path: str,
                                 eurozone_path: str,
-                                cutoff_date: str = "1999-01-01",
                                 interpolate:bool = True) -> pd.DataFrame:
     '''
     Prepare data from BIS.org for further analysis and visualisation
@@ -207,3 +206,26 @@ def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
     df = expandCPIInterestRates(cpi_df, ir_df, eu_join)
     
     return df.merge(iso_conversions[["ISO3", "name"]])
+
+def defineText(df: pd.DataFrame, indicators: Union[str, 
+                                             Tuple[str, ...], 
+                                             List[str]]) -> pd.DataFrame:
+    '''
+    Define text for hovertooltip in graphs
+    
+    Args:
+        df (pd.DataFrame): dataframe with indicators that need to be formatted into text
+        indicators (str, Tuple[str, ...], or List[str]): a list of indicators that need to be formatted
+    Returns:
+        pd.DataFrame the original dataframe with new columns
+    '''
+    if isinstance(indicators, str): 
+        if indicators in df.columns:
+            df[f"text_{indicators}"] = df.apply(lambda row: f"{row['name']}<br>{row[indicator]}%", axis=1)
+        else:
+            print(f"Indicator {indicators} not found")
+            return df
+    else:
+        for indicator in indicators:
+            df[f"text_{indicator}"] = df.apply(lambda row: f"{row['name']}<br>{row[indicator]: .2f}%", axis=1)
+    return df

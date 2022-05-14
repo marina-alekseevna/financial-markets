@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 import streamlit as st 
-
+from typing import Tuple, List, Union
 def reformatEU(target_df: pd.DataFrame, 
                eurozone_countries: str) -> pd.DataFrame:
     '''
@@ -96,33 +96,9 @@ def formatIRData(cutoff_date: str,
 
     return target_df[["date", "ISO3", "name", "interest rate", "text"]]
 
-@st.cache(suppress_st_warning=True)   
-def getMonthly(df: pd.DataFrame, indicator: str, 
-               eurozone_countries: str,
-               iso_conversions: str, 
-               date_range:tuple[str, str]=('1999-01', '2022-03')) -> pd.DataFrame:
-    '''
-    Reformat data for monthly visualisations
-    
-    Args: 
-        df (pd.DataFrame):
-        iso_conversions (str):
-        eurozone_countries (str):
-        date_range (tuple[str, str]):
-    Returns:
-        pd.DataFrame: formatted long dataframe
-    '''
-    df["Reference area"] = df["Reference area"].str[:2]
-    countries = list(df["Reference area"])
-    df = df[df.columns[list(df.columns).index(date_range[0]): list(df.columns).index(date_range[1])+1]].T
-    df.columns = countries
-    df = df.reset_index()
-    df = df.rename(columns={"XM":"EURO", "index":"date"})
-    df = reassignISO2toISO3(df, iso_conversions, False)
-    
-    return df
 
-    def getMonthly(df: pd.DataFrame, indicator: str, 
+@st.cache(suppress_st_warning=True)
+def getMonthly(df: pd.DataFrame, indicator: str, 
                iso_conversions: str, 
                date_range: tuple[str, str]=('1999-01', '2022-03'),
                interpolate: bool=True) -> pd.DataFrame:
@@ -133,7 +109,8 @@ def getMonthly(df: pd.DataFrame, indicator: str,
         df (pd.DataFrame): original dataframe
         iso_conversions (str): conversions for ISO2 to ISO3 conversions
         date_range (tuple[str, str]):
-        interpolate (bool): choose whether to linearly interpolate data for countries that have not posted it yet
+        interpolate (bool): choose whether to linearly interpolate data for 
+        countries that have not posted it yet, set to False by default
     Returns:
         pd.DataFrame: formatted long dataframe
     '''
@@ -143,11 +120,23 @@ def getMonthly(df: pd.DataFrame, indicator: str,
     df.columns = countries
     df = df.reset_index()
     df = df.rename(columns={"index":"date"})
-#     df = reassignISO2toISO3(df, iso_conversions, False)
     
-    return df.rename(columns = iso_conversions)
-# df.melt(id_vars="date", value_vars=df.columns[1:], var_name="country", value_name=indicator)
+    df = df.rename(columns = iso_conversions)
+    
+    if interpolate:
+        return df.interpolate(method='linear', axis=1)
+    else:
+        return df
+
 def splitDate(df: pd.DataFrame):
+    '''
+    Split data into month and year, converting them to int
+    
+    Args:
+        df (pd.DataFrame): the dataframe that gets changed
+    Returns:
+        pd.DataFrame the edited dataframe
+    '''
     df[["year", "month"]] = df['date'].str.split('-', 1, expand=True)
     df["year"] = df["year"].astype("int")
     df["month"] = df["month"].astype("int")
@@ -167,7 +156,6 @@ def expandCPIInterestRates(cpi_df: pd.DataFrame, ir_df: pd.DataFrame, eu_join: d
     '''
     cpi_df = splitDate(cpi_df)
     ir_df = splitDate(ir_df)
-#     df = cpi_df.merge(ir_df, how="left")
     df = cpi_df.merge(ir_df, how="left")
     
     dfs = []
@@ -185,7 +173,6 @@ def expandCPIInterestRates(cpi_df: pd.DataFrame, ir_df: pd.DataFrame, eu_join: d
 def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
                                 iso_conversions_path: str,
                                 eurozone_path: str,
-                                cutoff_date: str = "1999-01-01",
                                 interpolate:bool = True) -> pd.DataFrame:
     '''
     Prepare data from BIS.org for further analysis and visualisation
@@ -207,7 +194,6 @@ def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
     
     iso_conversions = pd.read_csv(iso_conversions_path)
     iso_conversions_dict = dict(zip(iso_conversions.ISO2, iso_conversions.ISO3))
-    name_conversions_dict = dict(zip(iso_conversions.ISO3, iso_conversions.name))
     
     cpi_df = getMonthly(cpi_df, "CPI", iso_conversions=iso_conversions_dict)
     ir_df = getMonthly(ir_df, "interest rate", iso_conversions=iso_conversions_dict)
@@ -219,4 +205,27 @@ def getCombinedCPIInterestRates(cpi_path: str, ir_path: str,
     eu_join=dict(zip(eu_index.ISO3, eu_index.Adoption.dt.year))
     df = expandCPIInterestRates(cpi_df, ir_df, eu_join)
     
+    return df.merge(iso_conversions[["ISO3", "name"]])
+
+def defineText(df: pd.DataFrame, indicators: Union[str, 
+                                             Tuple[str, ...], 
+                                             List[str]]) -> pd.DataFrame:
+    '''
+    Define text for hovertooltip in graphs
+    
+    Args:
+        df (pd.DataFrame): dataframe with indicators that need to be formatted into text
+        indicators (str, Tuple[str, ...], or List[str]): a list of indicators that need to be formatted
+    Returns:
+        pd.DataFrame the original dataframe with new columns
+    '''
+    if isinstance(indicators, str): 
+        if indicators in df.columns:
+            df[f"text_{indicators}"] = df.apply(lambda row: f"{row['name']}<br>{row[indicator]}%", axis=1)
+        else:
+            print(f"Indicator {indicators} not found")
+            return df
+    else:
+        for indicator in indicators:
+            df[f"text_{indicator}"] = df.apply(lambda row: f"{row['name']}<br>{row[indicator]: .2f}%", axis=1)
     return df

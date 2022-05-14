@@ -1,44 +1,62 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-
-st.title('Financial Markets')
-
 import time
 import datetime as dt
-
 from datetime import datetime, date, time
-from src.preprocessing import formatIRData
 from src.charts import makeChoropleth
 import plotly.graph_objects as go
 
+from src.utils import countries_cpi_ir_data
 
-cutoff_date = "1999-01-01"
-ir_path = r"./data/WS_CBPOL_D_csv_col.csv"
-iso_conversions = r"./data/iso_conversions.json"
-iso_to_name_conversions = r"./data/iso_to_name.csv"
-eurozone_countries = r"./data/eurozone.csv"
-
-df = formatIRData(cutoff_date, ir_path, iso_conversions, iso_to_name_conversions, eurozone_countries)
-
+st.set_page_config(
+        page_title="Financial Markets",
+        page_icon="chart_with_upwards_trend",
+        layout="wide",
+    )
 
 st.header("Official Date Picker")
-cols1,cols2 = st.columns((1,2)) # To make it narrower
+select_year,select_month, select_countries = st.columns((1,1,4))
 
-current_date = cols1.date_input(
-        'date', value=dt.date(year=2014, month=5, day=10),
-        min_value=dt.date(year=1999, month=1, day=1),
-        max_value=dt.date(year=2022, month=5, day=1))
+with select_year:
+  st.write("\n\n\n")
+  year = st.selectbox(
+     'Select year',
+     range(1999, 2023))
 
-choropleth=makeChoropleth(df[df.date == str(current_date)], -1, 50,'interest rate', "sunset", 
-              "Interest Rate (%)", '<b>Central Bank Policy Rates by country</b>',
-              'Source: BIS: Central Bank Policy Rates (https://www.bis.org/statistics/cbpol.htm)')
+with select_month:
+  st.write("\n\n\n")
+  if year < 2022:
+    month = st.selectbox(
+      'Select month',
+      range(1,13))
+  else:
+    month = st.selectbox(
+      'Select month',
+      range(1,5))
+  
+df = pd.read_csv(countries_cpi_ir_data)
+all_countries = tuple(df.name.unique())
+with select_countries:
+  st.write("\n\n\n")
+  symbols = st.multiselect("Choose countries", all_countries, 
+    ("UK", "Germany", "Russian Federation", "Japan", "France", "USA", "Australia"))
+
+graph1, graph2 = st.columns((1,1))
+
+with graph1:
+  choropleth1=makeChoropleth(df[(df.year == year)&(df.month == month)], -1, 50,'InterestRate', "sunset", 
+              "Interest Rate (%)", '<b>Central Bank Policy Rates</b>',
+              'Source: BIS: Statistics (https://www.bis.org/statistics/full_data_sets.htm)')
 
 
-st.plotly_chart(choropleth)
-# values = st.slider('Select a range of values', 0.0, 100.0, (25.0, 75.0))
+  st.plotly_chart(choropleth1, use_container_width=True)
+with graph2:
+  choropleth2=makeChoropleth(df[(df.year == year)&(df.month == month)], -1, 50,'CPI', "sunset", 
+              "CPI (%)", '<b>Consumer Price Index Change</b>',
+              'Source: BIS: Statistics (https://www.bis.org/statistics/full_data_sets.htm)')
 
-format = 'MMM DD, YYYY'  # format output
 
-
-# slider = cols1.slider('Select date', min_value=start_date, value=end_date ,max_value=end_date, format=format)
+  st.plotly_chart(choropleth2, use_container_width=True)
+with graph3:
+  pass

@@ -6,7 +6,7 @@ import pandas as pd
 def makeChoropleth(df: pd.DataFrame, 
                   min_val: float, 
                   max_val: float, 
-                  target_indicator: str, 
+                  indicator: str, 
                   colorscale: str, 
                   colorbar_title: str, 
                   title: str, 
@@ -18,7 +18,7 @@ def makeChoropleth(df: pd.DataFrame,
             df (pd.DataFrame): filtered for specific date
             min_val (float): minimum value for the colorscale
             max_val (float): maximum values for the colorscale
-            target_indicator (str): illustrated indicator
+            indicator (str): illustrated indicator
             colorscale (str): colorscale from plotly library
             colorbar_title (str): name of the indicator
             title (str): title of the choropleth
@@ -26,14 +26,19 @@ def makeChoropleth(df: pd.DataFrame,
         Returns:
             plotly.graph_objs._figure.Figure: stylised plotly choropleth
     '''
+    if indicator in df.columns:
+        pass
+    else:
+        print(f"Indicator {indicator} not found")
+        return
     fig = go.Figure(data=go.Choropleth(
         locations=df['ISO3'],
-        z=df[target_indicator].astype(float),
+        z=df[indicator].astype(float),
         zmin=min_val,
         zmax=max_val,
         colorscale= colorscale,
         autocolorscale=False,
-        text=df['text'], 
+        text=df[f'text_{indicator}'], 
         hovertemplate="%{text}",
         hoverlabel = dict(namelength=0),
         colorbar_title=colorbar_title))

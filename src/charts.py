@@ -1,8 +1,8 @@
 import plotly.graph_objects as go
 import pandas as pd
 from typing import Tuple, List, Union
-
-
+import plotly.express as px
+from calendar import monthrange
 
 def makeChoropleth(df: pd.DataFrame, 
                   min_val: float, 
@@ -46,7 +46,7 @@ def makeChoropleth(df: pd.DataFrame,
         colorbar_orientation='h',
         colorbar_thickness = 15,
         colorbar_yanchor = "bottom",
-        colorbar_y=-0.2))
+        colorbar_y=-0.01))
 
     fig.update_layout(
         dragmode="zoom",
@@ -58,13 +58,11 @@ def makeChoropleth(df: pd.DataFrame,
 
         title={
             'text': title,
-            'y':0.85,
-            'x':0.5,
-            'xanchor': 'center',
-            'yanchor': 'top',
+            'y':0.95,
+            'x':0.5
         },
         title_font_color='#525252',
-        title_font_size=26,
+        title_font_size=20,
         font=dict(
             family="Sans-Serif", 
             size=12, 
@@ -76,12 +74,13 @@ def makeChoropleth(df: pd.DataFrame,
         ),
         annotations = [dict(
             x=0,
-            y=-0.21,
+            y=-1.25,
             xref='paper',
             yref='paper',
             text=source,
             showarrow = False,
-        )]
+        )],
+        margin=dict(l=5, r=5, t=5, b=2)
     )
     return fig
 
@@ -102,11 +101,12 @@ def makeScatterplot(df: pd.DataFrame, indicators: Union[Tuple[str, str], List[st
     fig= go.Figure(go.Scatter(
         x=df[indicators[0]],
         y=df[indicators[1]],
-        text=df["name"],
+        text=df["Country"],
         hovertemplate=hovertemplate,
         name="",  
         marker=dict(
-                color="#E57A88",
+                # color="#E57A88",
+                color = px.colors.sequential.Sunsetdark,
                 opacity=0.8,
                 line=dict(
                     color='#525252',
@@ -128,23 +128,91 @@ def makeScatterplot(df: pd.DataFrame, indicators: Union[Tuple[str, str], List[st
         ),
         title={
                 'text': f"<b>{indicators[0]} vs {indicators[1]}</b>",
+                'y':0.9,
+                'x':0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+            },
+        title_font_color='#525252',
+        title_font_size=20
+    )
+
+    fig.update_xaxes(
+            tickangle = 0,
+            title_text = indicators[0],
+            title_font = {"size": 15},
+            title_standoff = 0)
+    fig.update_yaxes(
+            tickangle = 0,
+            title_text = indicators[1],
+            title_font = {"size": 15},
+            title_standoff = 0)
+    return fig
+
+
+def makeLineplot(df: pd.DataFrame, 
+                 indicator: str, 
+                 interval: Tuple[int, int],
+                 countries: List[str], 
+                 colorscheme: List[str]) -> go.Figure:
+    '''
+    makes a formatted lineplot
+    
+    Args:
+        df (pd.DataFrame) formatted dataframe with timeseries data for different countries
+        indicator (str): targetted indicators, title of a column
+        interval (Tuple[int, int]): year and month to be highlighted
+        countries (List[str]): list of countries to be plotted
+        colorscheme (List[str]) list of strings of colors, px.colors.sequential works 
+    Returns:
+        go.Figure lineplot
+    '''
+    counter = 0
+    fig = go.Figure(layout=dict(hovermode = "x unified"))
+    for country in countries:
+        fig.add_trace(go.Scatter(x=df[df.Country == country]["date"], 
+                               y=df[df.Country == country][indicator], mode='lines', name=country,
+                              hovertemplate="%{y:.2f}%",
+                              line = dict(color=colorscheme[counter%7])
+                              ))
+        counter += 1
+    
+    fig.update_layout(
+        template="none",
+        grid=dict(xgap=0.05, ygap=0.05),
+        font=dict(color='#525252'),
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=16,
+            font_family="Sans-Serif"
+        ),
+        title={
+                'text': f"<b>{indicator} over time</b>",
                 'y':0.85,
                 'x':0.5,
                 'xanchor': 'center',
                 'yanchor': 'top',
             },
         title_font_color='#525252',
-        title_font_size=26
-    )
-
+        title_font_size=26)
+    
     fig.update_xaxes(
-            tickangle = 0,
-            title_text = indicators[0],
-            title_font = {"size": 20},
-            title_standoff = 15)
+        tickangle = 0,
+        title="date",
+        title_font = {"size": 15},
+        title_standoff = 0)
+    
     fig.update_yaxes(
-            tickangle = 0,
-            title_text = indicators[1],
-            title_font = {"size": 20},
-            title_standoff = 15)
+        tickangle = 0,
+        title=indicator,
+        title_text = indicator,
+        title_font = {"size": 15},
+        title_standoff = 0)
+    
+    fig.add_vrect(
+        x0=f"{interval[0]}-{interval[1]}-01", 
+        x1=f"{interval[0]}-{interval[1]}-{monthrange(interval[0],interval[1])[1]}",
+        fillcolor="Blue", opacity=0.5,
+        layer="below", line_width=0,
+    )
     return fig

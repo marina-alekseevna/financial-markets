@@ -4,7 +4,7 @@ import numpy as np
 import time
 import datetime as dt
 from datetime import datetime, date, time
-from src.charts import makeChoropleth, makeScatterplot, makeLineplot
+from src.charts import makeChoropleth, makeScatterplot, makeLineplot, addLineplot, makeVerticalLineplots
 import plotly.graph_objects as go
 import plotly.express as px
 
@@ -16,7 +16,7 @@ st.set_page_config(
         layout="wide",
     )
 
-st.header("Official Date Picker")
+st.header("Consumer Price Index (CPI) and Central Bank Interest Rates")
 select_year,select_month, select_countries = st.columns((1,1,4))
 
 with select_year:
@@ -56,7 +56,12 @@ with scatter_section_1:
   st.plotly_chart(scatterplot_1)
 
 with trendplots_1:
-  trendplots_1=makeLineplot(df, "CPI", (year, month), countries, colorscheme=px.colors.sequential.Sunsetdark)
+  trendplots_1=makeVerticalLineplots(
+    df, indicators=("CPI", "InterestRate"), 
+    interval=(year, month),
+    countries=countries,
+    subplot_titles=("<b>CPI over Time</b>", "<b>Interest Rate over Time</b>"),
+    colorscheme=px.colors.sequential.Sunsetdark)
   st.plotly_chart(trendplots_1)
 
 choropleth_section_1, choropleth_section_2 = st.columns(2)

@@ -3,6 +3,9 @@ import pandas as pd
 from typing import Tuple, List, Union
 import plotly.express as px
 from calendar import monthrange
+from plotly.subplots import make_subplots
+
+
 
 def makeChoropleth(df: pd.DataFrame, 
                   min_val: float, 
@@ -128,13 +131,14 @@ def makeScatterplot(df: pd.DataFrame, indicators: Union[Tuple[str, str], List[st
         ),
         title={
                 'text': f"<b>{indicators[0]} vs {indicators[1]}</b>",
-                'y':0.9,
+                'y':0.85,
                 'x':0.5,
                 'xanchor': 'center',
                 'yanchor': 'top',
             },
         title_font_color='#525252',
-        title_font_size=20
+        title_font_size=20,
+        margin=dict(l=15, r=15)
     )
 
     fig.update_xaxes(
@@ -171,10 +175,10 @@ def makeLineplot(df: pd.DataFrame,
     fig = go.Figure(layout=dict(hovermode = "x unified"))
     for country in countries:
         fig.add_trace(go.Scatter(x=df[df.Country == country]["date"], 
-                               y=df[df.Country == country][indicator], mode='lines', name=country,
-                              hovertemplate="%{y:.2f}%",
-                              line = dict(color=colorscheme[counter%7])
-                              ))
+                            y=df[df.Country == country][indicator], mode='lines', name=country,
+                            hovertemplate="%{y:.2f}%",
+                            line = dict(color=colorscheme[counter%7])
+                            ))
         counter += 1
     
     fig.update_layout(
@@ -215,4 +219,114 @@ def makeLineplot(df: pd.DataFrame,
         fillcolor="Blue", opacity=0.5,
         layer="below", line_width=0,
     )
+    return fig
+
+
+
+def addLineplot(df: pd.DataFrame, 
+                fig: go.Figure,
+                indicator: str,
+                interval: Tuple[int, int],
+                countries: List[str],
+                pos: Tuple[int, int],
+                colorscheme: List[str]) -> go.Figure:
+    '''
+    adds a formatted lineplot to a pre-existing go.Figure
+    
+    Args:
+        df (pd.DataFrame): a formatted dataframe with timeseries data for different countries
+        fig (go.Figure): a figure to add lineplot to
+        indicator (str): targetted indicators, title of a column
+        interval (Tuple[int, int]): year and month to be highlighted
+        countries (List[str]): list of countries to be plotted
+        pos (int): position in the subplot item
+        colorscheme (List[str]) list of strings of colors, px.colors.sequential works 
+    Returns:
+        go.Figure with added lines to a subplot
+    '''
+    counter = 0
+    
+    for country in countries:
+        fig.add_trace(go.Scatter(x=df[df.Country == country]["date"], 
+                               y=df[df.Country == country][indicator], mode='lines', name=country,
+                              hovertemplate="%{y:.2f}%",
+                              line = dict(color=colorscheme[counter%7]),
+                              
+                              ),
+                      row=pos[0], col=pos[1])
+        counter += 1
+    
+    fig.add_vrect(
+        x0=f"{interval[0]}-{interval[1]}-01", 
+        x1=f"{interval[0]}-{interval[1]}-{monthrange(interval[0],interval[1])[1]}",
+        fillcolor="Blue", opacity=0.5,
+        layer="below", line_width=0,
+        row=pos[0], col=pos[1]
+    )
+
+    return fig
+
+def makeVerticalLineplots(df: pd.DataFrame,
+                          indicators: Tuple[str],
+                          countries: Tuple[str],
+                          interval: Tuple[int],
+                          subplot_titles: Tuple[str],
+                          colorscheme: List[str]) -> go.Figure:
+    '''
+    makes vertical lineplots with titles
+
+    Args:
+        df (pd.DataFrame): a formatted dataframe with timeseries data for different countries
+        fig (go.Figure): a figure to add lineplot to
+        indicators (str): targetted indicators, title of a column
+        countries (List[str]): list of countries to be plotted
+        interval (Tuple[int, int]): year and month to be highlighted
+        subplot_titles (Tuple[str]): titles to be used for the graphs
+        colorscheme (List[str]) list of strings of colors, px.colors.sequential works 
+    '''
+    rows = len(indicators)
+    fig = make_subplots(rows=rows, cols=1,
+                        shared_xaxes=True,
+                        vertical_spacing=0.1,
+                        subplot_titles=subplot_titles)
+    pos = 1
+    for indicator in indicators:
+        addLineplot(df, fig, 
+                    indicator, 
+                    interval, 
+                    countries,
+                    (pos, 1), 
+                    colorscheme)
+        pos += 1
+
+    fig.update_xaxes(
+        tickangle = 0,
+        title="date",
+        title_text = "date",
+        title_font = {"size": 15},
+        title_standoff = 0)
+
+    fig.update_yaxes(
+        tickangle = 0,
+        title="%",
+        title_text = "%",
+        title_font = {"size": 15},
+        title_standoff = 0)
+
+    fig.update_layout(
+        # hovermode = "x unified",
+        template="none",
+        grid=dict(xgap=0.05, ygap=0.05),
+        font=dict(color='#525252'),
+        hoverlabel=dict(
+            bgcolor="white",
+            font_size=16,
+            font_family="Sans-Serif"
+        ),
+
+        title_font_color='#525252',
+        title_font_size=26,
+        margin=dict(l=15, r=15))
+    fig.layout.annotations[0].update(font_size=20)
+    fig.layout.annotations[1].update(font_size=20)
     return fig
